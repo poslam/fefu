@@ -18,3 +18,8 @@ select "date",
        invoice_money,
        sum(invoice_money) over(partition by shop_ref order by "date") as "run_sum"
 from "money"
+
+
+
+
+
