@@ -1,4 +1,3 @@
--- Active: 1689169282036@@127.0.0.1@5432@db_study
 
 # 1
 
@@ -62,30 +61,57 @@ order by "date", shop_ref
 
 # 4
 
-
-
-
-
-
-
-
-
-# lesson
-select *,
-       count(*) over(partition by "date") as cnt
-from invoice
-order by "date"
-
-# скользящая сумма
-
-with "money" as (
-    select "date",
+with temp1 ("month", income) as (
+    select to_char("date", 'MONTHYYYY'), 
+           sum(price_per_one*amount)
+    from sales
+    group by to_char("date", 'MONTHYYYY')
+),
+temp2 (m, s, d, perc) as (
+    select to_char("date", 'MONTHYYYY'), 
            shop_ref,
-           price_per_one * amount as "invoice_money"
-    from invoice
+           to_char("date", 'DY'),
+           sum(price_per_one*amount) / income as "m"
+    from sales, temp1
+    where temp1.month = to_char("date", 'MONTHYYYY')
+    group by to_char("date", 'MONTHYYYY'), shop_ref, to_char("date", 'DY'), income
+),
+temp3 (m, s, max) as (
+    select "m", s, max(perc)
+    from temp2, temp1
+    where temp2.m = temp1.month
+    group by "m", s
 )
-select "date",
-       shop_ref,
-       invoice_money,
-       sum(invoice_money) over(partition by shop_ref order by "date") as "run_sum"
-from "money"
+select temp3.m as "Месяц", 
+       temp3.s as "Название магазина", 
+       temp2.d as "День недели", 
+       temp3.max as "Доля продаж"
+from temp2, temp3
+where temp2.m = temp3.m and
+      temp2.s = temp3.s and
+      temp2.perc = temp3.max
+order by temp3.m, temp3.s, temp2.d, temp3.max
+
+# 5
+
+with temp (s, d, su) as (
+    with "money" as (
+        select "date",
+            shop_ref,
+            price_per_one * amount as income
+        from sales
+    )
+    select shop_ref,
+        "date",
+        sum(income)
+    from "money"
+    group by shop_ref, "date"
+)
+select s as "Название магазина",
+       d as "Дата", 
+       su as "Доход за день", 
+       sum(su) over(partition by s order by d) as "Доход с начала месяца"
+from temp
+
+
+select 148853150 + 427165900 - 576019100
