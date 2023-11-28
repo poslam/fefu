@@ -1,3 +1,4 @@
+-- Active: 1698192534173@@127.0.0.1@8880@db_lab
 
 # 1
 
@@ -13,51 +14,35 @@ order by to_char("date", 'YYYY-mm-dd')
 
 # 2
 
-with temp1 ("date", shop_ref, resp, sum) as (
-    select "date", shop_ref, responsible_ref, price_per_one*amount
+
+select "date", shop_ref, responsible_ref, max("sum") 
+from (
+    select  "date", shop_ref, responsible_ref,
+            sum(price_per_one*amount) over (partition by "date", shop_ref, responsible_ref)
     from sales
-),
-temp2 ("date", shop_ref, sum) as (
-    select "date", shop_ref, max(price_per_one*amount)
-    from sales
-    group by "date", shop_ref
-)
-select temp1.date, temp1.shop_ref, temp1.resp, temp1.sum
-from temp1, temp2
-where temp1.date = temp2.date and
-      temp1.shop_ref = temp2.shop_ref and
-      temp1.sum = temp2.sum
-order by "date", shop_ref
+) t
+group by "date", shop_ref, responsible_ref
+
 
 # 3
 
-with temp1 ("date", shop_ref, resp, max, min) as (
-    select sales.date, sales.shop_ref, sales.responsible_ref, 
-           sales.price_per_one*sales.amount,
-           writeoffs.price_per_one*writeoffs.amount
-    from sales
-    left join writeoffs on sales.date = writeoffs.date and
-                      sales.shop_ref = writeoffs.shop_ref and
-                      sales.responsible_ref = writeoffs.responsible_ref
-    order by sales.date, sales.shop_ref, sales.responsible_ref
-),
-temp2 ("date", shop_ref, max, min) as (
-    select sales.date, sales.shop_ref, 
-            max(sales.price_per_one*sales.amount),
-            min(writeoffs.price_per_one*writeoffs.amount)
-    from sales
-    left join writeoffs on sales.date = writeoffs.date and
-                    sales.shop_ref = writeoffs.shop_ref and
-                    sales.responsible_ref = writeoffs.responsible_ref
-    group by sales.date, sales.shop_ref
-)
-select temp1.date, temp1.shop_ref, temp1.resp, temp1.max, temp1.min, temp1.max - temp2.min as profit
-from temp1, temp2
-where temp1.date = temp2.date and 
-      temp1.shop_ref = temp2.shop_ref and
-      temp1.max = temp2.max and
-      temp1.min = temp2.min 
-order by "date", shop_ref
+select "date", shop_ref, responsible_ref, "max", "min", "max"-"min" as profit
+from (
+    select "date", shop_ref, responsible_ref, sales_sum as "max", writeoffs_sum as "min",
+        row_number() over (partition by "date", shop_ref order by sales_sum desc, writeoffs_sum) as i
+    from (
+        select s.date, s.shop_ref, s.responsible_ref,
+                sum(s.price_per_one*s.amount) over (partition by s.date, s.shop_ref, s.responsible_ref) as sales_sum,
+                sum(w.price_per_one*w.amount) over (partition by w.date, w.shop_ref, w.responsible_ref) as writeoffs_sum
+        from sales as s, writeoffs as w
+        where s.date = w.date and 
+                s.shop_ref = w.shop_ref and
+                s.responsible_ref = w.responsible_ref
+    ) t
+) t
+where t.i = 1
+order by "date", shop_ref, responsible_ref
+
 
 # 4
 
@@ -110,8 +95,5 @@ with temp (s, d, su) as (
 select s as "Название магазина",
        d as "Дата", 
        su as "Доход за день", 
-       sum(su) over(partition by s order by d) as "Доход с начала месяца"
+       1.0*sum(su) over(partition by s order by d) as "Доход с начала месяца"
 from temp
-
-
-select 148853150 + 427165900 - 576019100
