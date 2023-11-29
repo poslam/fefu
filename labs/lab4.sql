@@ -24,6 +24,15 @@ from (
 group by "date", shop_ref, responsible_ref
 
 
+select *
+from (
+    select "date", shop_ref, responsible_ref, sum(price_per_one*amount),
+        row_number() over (partition by "date", shop_ref order by sum(price_per_one*amount) desc) as i
+    from sales
+    group by "date", shop_ref, responsible_ref
+) t
+where i = 1
+
 # 3
 
 select "date", shop_ref, responsible_ref, "max", "min", "max"-"min" as profit
