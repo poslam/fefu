@@ -14,7 +14,7 @@ public:
 
     void splitChild(int i, BTreeNode *y);
 
-    void traverse();
+    void print();
 
     int findKey(int k);
 
@@ -52,10 +52,10 @@ public:
         t = _t;
     }
 
-    void traverse()
+    void print()
     {
         if (root != NULL)
-            root->traverse();
+            root->print();
     }
 
     BTreeNode* search(int k)
@@ -88,17 +88,17 @@ int BTreeNode::findKey(int k)
     return idx;
 }
 
-void BTreeNode::traverse()
+void BTreeNode::print()
 {
     int i;
     for (i = 0; i < n; i++) {
         if (leaf == false)
-            C[i]->traverse();
+            C[i]->print();
         cout << " " << keys[i];
     }
 
     if (leaf == false)
-        C[i]->traverse();
+        C[i]->print();
 }
 
 BTreeNode* BTreeNode::search(int k)
@@ -503,7 +503,7 @@ void BTree::remove(int k)
 
 int main()
 {
-    BTree t(3); // A B-Tree with minimum degree 3
+    BTree t(3);
 
     t.insert(100);
     t.insert(33);
@@ -516,45 +516,24 @@ int main()
     t.insert(184);
     t.insert(1632);
     t.insert(1923);
-    t.insert(2234);
-    t.insert(24235);
-    t.insert(2236);
-    t.insert(21);
-    t.insert(423);
-    t.insert(523);
-    t.insert(20);
-    t.insert(22);
-    t.insert(223);
-    t.insert(13337);
-    t.insert(12);
-    t.insert(62);
 
-    t.traverse();
+    t.print();
     cout << endl;
 
     t.remove(13337);
-    t.traverse();
-    cout << endl;
-
-    t.remove(62);
-
-    t.traverse();
+    t.print();
     cout << endl;
 
     t.remove(133);
-    t.traverse();
+    t.print();
     cout << endl;
 
     t.remove(14);
-    t.traverse();
+    t.print();
     cout << endl;
 
     t.remove(33);
-    t.traverse();
-    cout << endl;
-
-    t.remove(12);
-    t.traverse();
+    t.print();
     cout << endl;
 
     return 0;
